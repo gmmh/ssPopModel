@@ -1,8 +1,12 @@
+#GMH 04.19.15
+# local machine version
+
 library(popcycle)
 
-cruise <- "SCOPE_2"
-home <- "~/Desktop"
-set.project.location(paste0("/Volumes/seaflow/", cruise))
+cruise <- "DeepDOM"
+home <- "~/Desktop/Cruises/DeepDOM_2013/seaflow/Cell_Division"
+set.project.location("/Volumes/gwennm/popcycle")
+flag.file <- "/Volumes/gwennm/popcycle/sqlite/flag_file.txt"
 phyto <- "prochloro"
 para <- "fsc_small"
 n.breaks <- 57
@@ -14,14 +18,24 @@ time.interval <- 60 #minutes
 
 # Get the time range
 stat <- get.stat.table()
+stat$time <- as.POSIXct(stat$time,format="%FT%T",tz='GMT')
 phyto.stat <- subset(stat, pop == phyto)
-phyto.stat$time <- as.POSIXct(phyto.stat$time,format="%FT%T",tz='GMT')
+flag <- read.table(flag.file, header =T) #flag info to take out bad files
+flag.good <- subset(flag, flag==0)
+phyto.stat <- subset(phyto.stat, file %in% flag.good$file)
 time.range <- range(phyto.stat$time)
 time <- seq(time.range[1],time.range[2] , by=60*time.interval) # cut the time series according to time interval
 
 # Get the range of 'para' for 'phyto' 
-para.phyto <- get.opp.by.date(time.range[1], time.range[2], pop=phyto, channel=para)[,para]
-para.range <- range(para.phyto)
+#changed this to use the gate ranges saved in the log rather than dowloading opp files
+log.gate <- list.files(log.gate.location, phyto)
+para.phyto <- as.data.frame(matrix(nrow=length(log.gate), ncol=2))
+for(i in 1:length(log.gate)){
+	log.table <- read.table(paste0(log.gate.location,"/", log.gate[i]), sep=",", header=T)
+	para.phyto[i,] <- range(log.table[,para])
+}
+#para.phyto <- get.opp.by.date(time.range[1], time.range[2], pop=phyto, channel=para)[,para]
+para.range <- c(min(para.phyto[,1]), max(para.phyto[,2]))
 
 
 #########################
@@ -29,22 +43,22 @@ para.range <- range(para.phyto)
 #########################
 
 # Get the beads data
-m.beads <- median(subset(stat, pop =='beads' | time > time.range[1] & time < time.range[2])[,para])
+#m.beads <- median(subset(stat, pop =='beads' | time > time.range[1] & time < time.range[2])[,para])
 # Plot the light scattering of beads over time
 plot.time(stat, popname='beads',param='fsc_small')
 
-# # BInned data according to 'time'interval'
-# beads <- subset(df, pop=='beads')
-# time.binned <- cut(beads$time, time, labels=F)
-# para.beads.binned <- as.vector(tapply(beads$fsc_small, time.binned, median))
-# time.beads.binned <- as.POSIXct(as.vector(tapply(beads$time, time.binned, mean)), origin="1970-01-01", tz='GMT')
-# points(time.beads.binned , para.beads.binned, type='o', col=2, pch=16)
+# BInned data according to 'time'interval'
+beads <- subset(stat, pop=='beads' & time > time.range[1] & time < time.range[2])
+time.binned <- cut(beads$time, time, labels=F)
+para.beads.binned <- as.vector(tapply(beads$fsc_small, time.binned, median))
+time.beads.binned <- as.POSIXct(as.vector(tapply(beads$time, time.binned, mean)), origin="1970-01-01", tz='GMT')
+points(time.beads.binned , para.beads.binned, type='o', col=2, pch=16)
 
-# # Smooth the data
-# spar <- 0.45 # smooothing parameter, the higher the more smoothing is applied.
-# smooth <- smooth.spline(time.beads.binned, para.beads.binned,spar=spar)
-# smooth.para.beads.binned <- spline(as.POSIXct(smooth$x,origin="1970-01-01",tz="GMT"), smooth$y, xout=as.POSIXct(smooth$x,origin="1970-01-01",tz="GMT"))
-# lines(smooth.para.beads.binned ,col=3,lwd=3) # visualize the smooth data and re-adjust the spar parameter if necessary.
+# Smooth the data
+spar <- 0.45 # smooothing parameter, the higher the more smoothing is applied.
+smooth <- smooth.spline(time.beads.binned, para.beads.binned,spar=spar)
+smooth.para.beads.binned <- spline(as.POSIXct(smooth$x,origin="1970-01-01",tz="GMT"), smooth$y, xout=as.POSIXct(smooth$x,origin="1970-01-01",tz="GMT"))
+lines(smooth.para.beads.binned ,col=3,lwd=3) # visualize the smooth data and re-adjust the spar parameter if necessary.
 
 
 ###############################################################
@@ -64,7 +78,9 @@ for( t in time){
         }
 
     # get Beads signal
-        
+    m.beads1 <- smooth.para.beads.binned$y[which(smooth.para.beads.binned$x > as.numeric(t))[1]]
+    m.beads2 <- smooth.para.beads.binned$y[max(which(smooth.para.beads.binned$x < as.numeric(t)+60*time.interval))]
+    m.beads <- mean(c(m.beads1, m.beads2), na.rm=T)
     # get opp/evt ratio (used to calculate Ndist)
   ## opp.evt.ratio <- median(get.opp.evt.ratio.by.date(t, t+60*time.interval)$ratio)
 
