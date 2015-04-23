@@ -167,7 +167,7 @@ determine.opt.para <- function(V.hists,N.dist,Edata,volbins){
 			id <- match(as.numeric(colnames(Vproj)) , seq(start, start+60*60*24, 60*60))
 			id <- id[which(id<25)]
 
-		for(hr in 1:(dim[2]-1)){
+		for(hr in 1:(dim(V.hists)[2]-1)){
 					B <- matrix.conct.fast(hr=id[hr]-1, Einterp=Einterp, volbins=volbins, gmax=gmax, b=b, E_star=E_star,dmax=dmax)
 					Nproj[,hr+1] <- round(B %*% Nproj[,hr]) # calculate numbers of individuals
 					Vproj[,hr+1] <- B %*% Vproj[,hr] # calculate the projected size-frequency distribution
