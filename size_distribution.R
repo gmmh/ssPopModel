@@ -7,7 +7,7 @@ cruise <- "DeepDOM"
 home <- "~/Desktop/Cruises/DeepDOM_2013/seaflow/Cell_Division"
 set.project.location("/Volumes/gwennm/popcycle")
 flag.file <- "/Volumes/gwennm/popcycle/sqlite/flag_file.txt"
-phyto <- "prochloro"
+phyto <- "synecho"
 para <- "fsc_small"
 n.breaks <- 57
 time.interval <- 60 #minutes
@@ -131,6 +131,9 @@ print(paste("saving ", home,"/",phyto,"_dist_Ncat",n.breaks,"_",cruise,sep=""))
 #########################
 ### SHOW size distribution ###
 #########################
+# home <- "/Volumes/gwennm/DeepDOM/Cell_Division"
+# load(file=paste(home,"/",phyto,"_dist_Ncat",n.breaks,"_",cruise,sep=""))
+
 library(rgl)
 jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
